@@ -78,19 +78,34 @@ function formatChronicValue(v: unknown): { text: string; isTrue: boolean } {
 
 // ── Traduction des noms de conditions chroniques ──────────────────
 const CONDITION_LABELS: Record<string, string> = {
-  diabetes: 'Diabète sucré',
-  kidney_disease: 'Insuffisance rénale',
-  hyperthyroidism: 'Hyperthyroïdie',
-  epilepsy: 'Épilepsie',
-  cushings: 'Syndrome de Cushing',
-  heart_disease: 'Cardiopathie',
-  arthritis: 'Arthrose',
-  asthma: 'Asthme félin',
-  ibd: 'MICI',
-  hypothyroidism: 'Hypothyroïdie',
+  diabetes:    'Diabète sucré',
+  kidney:      'Insuffisance rénale chronique',
+  hyperthyroid:'Hyperthyroïdie',
+  epilepsy:    'Épilepsie',
+  cushing:     'Syndrome de Cushing',
+  cardio:      'Cardiopathie',
+  arthrosis:   'Arthrose',
+  asthma:      'Asthme félin',
+  ibd:         'MICI (intestin inflammatoire)',
+  hypothyroid: 'Hypothyroïdie',
+}
+const CONDITION_DESCRIPTIONS: Record<string, string> = {
+  diabetes:    'Surveillance glycémique quotidienne — suivi des doses d\'insuline et des corps cétoniques',
+  kidney:      'Suivi de la fonction rénale — hydratation, énergie et créatinine',
+  hyperthyroid:'Surveillance de la thyroïde — suivi du poids, appétit et signes cliniques',
+  epilepsy:    'Suivi des crises épileptiques — fréquence, durée et traitements administrés',
+  cushing:     'Surveillance du syndrome de Cushing — consommation d\'eau et signes cliniques',
+  cardio:      'Surveillance cardiaque — toux, respiration et tolérance à l\'effort',
+  arthrosis:   'Suivi orthopédique — douleur et mobilité articulaire',
+  asthma:      'Surveillance respiratoire — sifflements, toux et difficultés respiratoires',
+  ibd:         'Suivi digestif — qualité des selles, nausées et appétit',
+  hypothyroid: 'Surveillance thyroïdienne — énergie, poids et tolérance au froid',
 }
 function translateCondition(c: string): string {
   return CONDITION_LABELS[c] ?? c.replace(/_/g, ' ')
+}
+function describeCondition(c: string): string {
+  return CONDITION_DESCRIPTIONS[c] ?? ''
 }
 
 // ── Types ────────────────────────────────────────────────────────
@@ -839,12 +854,19 @@ export default function SessionView({ session, animal, pinnedObs, treatments, va
               <WhiteCard><p style={{ fontSize: 14, color: '#c4bfb5', fontStyle: 'italic' }}>Aucune condition chronique enregistrée</p></WhiteCard>
             ) : (
               <div style={{ background: 'white', borderRadius: 16, border: '1px solid #e8e3da', overflow: 'hidden' }}>
-                {/* Header avec barre teal à gauche */}
-                <div style={{ borderLeft: '3px solid #0B6E5F', padding: '18px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <p style={{ fontSize: 16, fontWeight: 700, color: '#0B6E5F', fontFamily: 'var(--font-space), sans-serif', margin: 0 }}>
-                    {translateCondition(chronicCondition.condition)}
-                  </p>
-                  <span style={{ background: '#d1fae5', color: '#065f46', fontSize: 11, fontWeight: 700, padding: '4px 12px', borderRadius: 99, letterSpacing: '0.03em' }}>
+                {/* Header */}
+                <div style={{ borderLeft: '3px solid #0B6E5F', padding: '18px 24px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
+                  <div>
+                    <p style={{ fontSize: 18, fontWeight: 700, color: '#0B6E5F', fontFamily: 'var(--font-space), sans-serif', margin: '0 0 4px' }}>
+                      {translateCondition(chronicCondition.condition)}
+                    </p>
+                    {describeCondition(chronicCondition.condition) && (
+                      <p style={{ fontSize: 12, color: '#9ca3af', margin: 0, lineHeight: 1.5 }}>
+                        {describeCondition(chronicCondition.condition)}
+                      </p>
+                    )}
+                  </div>
+                  <span style={{ flexShrink: 0, background: '#d1fae5', color: '#065f46', fontSize: 11, fontWeight: 700, padding: '4px 12px', borderRadius: 99, letterSpacing: '0.03em' }}>
                     Suivi actif
                   </span>
                 </div>
@@ -854,26 +876,32 @@ export default function SessionView({ session, animal, pinnedObs, treatments, va
                     <p style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 4px' }}>
                       Derniers enregistrements
                     </p>
-                    {chronicCondition.chronic_records.slice(0, 3).map(rec => (
-                      <div key={rec.id} style={{ background: '#F8FCFB', border: '1px solid #d1fae5', borderRadius: 12, padding: '14px 18px' }}>
-                        <p style={{ fontSize: 13, fontWeight: 700, color: '#1a2e2a', fontFamily: 'var(--font-space), sans-serif', marginBottom: 12 }}>
-                          {fmt(rec.recorded_at)}
-                        </p>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-                          {Object.entries(rec.data ?? {}).filter(([, v]) => hasValue(v)).map(([k, v]) => {
-                            const { text, isTrue } = formatChronicValue(v)
-                            return (
-                              <div key={k} style={{ background: 'white', border: '1px solid #e8e3da', borderRadius: 8, padding: '8px 12px' }}>
-                                <p style={{ fontSize: 9, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
-                                  {translateKey(k)}
-                                </p>
-                                <p style={{ fontSize: 15, fontWeight: 700, color: isTrue ? '#FF6B5C' : '#0B6E5F', margin: 0 }}>{text}</p>
-                              </div>
-                            )
-                          })}
+                    {chronicCondition.chronic_records.slice(0, 3).map(rec => {
+                      const filledEntries = Object.entries(rec.data ?? {}).filter(([, v]) => hasValue(v))
+                      return (
+                        <div key={rec.id} style={{ background: '#F8FCFB', border: '1px solid #d1fae5', borderRadius: 12, padding: '14px 18px' }}>
+                          <p style={{ fontSize: 13, fontWeight: 700, color: '#1a2e2a', fontFamily: 'var(--font-space), sans-serif', marginBottom: 12 }}>
+                            {fmt(rec.recorded_at)}
+                          </p>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+                            {filledEntries.map(([k, v]) => {
+                              const { text, isTrue } = formatChronicValue(v)
+                              return (
+                                <div key={k} style={{ background: 'white', border: '1px solid #e8e3da', borderRadius: 8, padding: '8px 12px' }}>
+                                  <p style={{ fontSize: 9, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
+                                    {translateKey(k)}
+                                  </p>
+                                  <p style={{ fontSize: 15, fontWeight: 700, color: isTrue ? '#FF6B5C' : '#0B6E5F', margin: 0 }}>{text}</p>
+                                </div>
+                              )
+                            })}
+                          </div>
+                          <p style={{ fontSize: 11, color: '#c4bfb5', fontStyle: 'italic', margin: '12px 0 0' }}>
+                            Seules les valeurs renseignées par le propriétaire sont affichées.
+                          </p>
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 ) : (
                   <div style={{ padding: '16px 24px 24px' }}>
