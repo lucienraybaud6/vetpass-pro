@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 
 type Phase = 'code' | 'email' | 'otp' | 'no_session'
 
-interface StoredVet { id: string; first_name?: string | null; last_name?: string | null; clinic_name?: string | null; saved_at: number }
+interface StoredVet { id: string; email: string; first_name?: string | null; last_name?: string | null; clinic_name?: string | null; saved_at: number }
 
 // ── Inline SVG icons ──────────────────────────────────────────────
 function IconLock() {
@@ -109,7 +109,7 @@ export default function HomePage() {
       if (raw) {
         const profile: StoredVet = JSON.parse(raw)
         const ageDays = (Date.now() - profile.saved_at) / 86400000
-        if (ageDays < 30) setKnownVet(profile)
+        if (ageDays < 90) setKnownVet(profile)
       }
     } catch { /* ignore */ }
   }, [])
@@ -211,8 +211,10 @@ export default function HomePage() {
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString()
 
       await supabase.from('vet_otps').insert({ email: emailNorm, otp, expires_at: expiresAt, used: false })
-      await supabase.functions.invoke('send-otp', {
-        body: { email: emailNorm, otp, vet_name: firstName.trim() || undefined },
+      await fetch('/api/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailNorm, otp, firstName: firstName.trim() || undefined }),
       })
 
       setDevOtp(otp)
@@ -258,13 +260,13 @@ export default function HomePage() {
           .select('id, first_name, last_name, clinic_name').single()
         if (newVet?.id) {
           localStorage.setItem('vet_id', newVet.id)
-          localStorage.setItem('vet_profile', JSON.stringify({ id: newVet.id, first_name: newVet.first_name, last_name: newVet.last_name, clinic_name: newVet.clinic_name, saved_at: Date.now() }))
+          localStorage.setItem('vet_profile', JSON.stringify({ id: newVet.id, email: vetEmail, first_name: newVet.first_name, last_name: newVet.last_name, clinic_name: newVet.clinic_name, saved_at: Date.now() }))
         }
       } else {
         const { data: existingVet } = await supabase.from('vets').select('id, first_name, last_name, clinic_name').eq('email', vetEmail).maybeSingle()
         if (existingVet?.id) {
           localStorage.setItem('vet_id', existingVet.id)
-          localStorage.setItem('vet_profile', JSON.stringify({ id: existingVet.id, first_name: existingVet.first_name, last_name: existingVet.last_name, clinic_name: existingVet.clinic_name, saved_at: Date.now() }))
+          localStorage.setItem('vet_profile', JSON.stringify({ id: existingVet.id, email: vetEmail, first_name: existingVet.first_name, last_name: existingVet.last_name, clinic_name: existingVet.clinic_name, saved_at: Date.now() }))
         }
       }
 
