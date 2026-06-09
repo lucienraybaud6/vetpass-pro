@@ -14,13 +14,66 @@ const VAX_BY_SPECIES: Record<string, string[]> = {
 
 // ── Traduction des clés de suivi chronique ────────────────────────
 const CHRONIC_LABELS: Record<string, string> = {
-  glucose_morning: 'Glycémie matin', glucose_evening: 'Glycémie soir',
-  insulin_dose: 'Dose insuline', signs: 'Signes cliniques', ketones: 'Cétones',
-  weight: 'Poids', notes: 'Notes', temperature: 'Température',
-  heart_rate: 'Fréquence cardiaque', blood_pressure: 'Tension artérielle',
+  // Diabète
+  glucose_morning: 'Glycémie matin',
+  glucose_evening: 'Glycémie soir',
+  glucose_unit: 'Unité',
+  insulin_dose: 'Dose insuline',
+  insulin_unit: 'Unité insuline',
+  signs: 'Signes cliniques',
+  ketones: 'Cétones',
+  // Hyperthyroïdie
+  weight: 'Poids',
+  appetite: 'Appétit',
+  vomiting: 'Vomissements',
+  agitation: 'Agitation',
+  heart_rate: 'Fréquence cardiaque',
+  // IRC
+  drinking: 'Consommation d\'eau',
+  urination: 'Urination',
+  energy: 'Énergie',
+  creatinine: 'Créatinine',
+  // Épilepsie
+  seizures: 'Crises',
+  seizure_duration: 'Durée des crises',
+  medication_given: 'Médicament administré',
+  // Cardiopathie
+  cough: 'Toux',
+  breathing: 'Respiration',
+  exercise_tolerance: 'Tolérance à l\'effort',
+  // Arthrose
+  mobility: 'Mobilité',
+  pain_level: 'Niveau de douleur',
+  // Cushing
+  water_intake: 'Consommation d\'eau',
+  urination_frequency: 'Fréquence urination',
+  pot_belly: 'Ventre distendu',
+  // MICI
+  stool_quality: 'Qualité des selles',
+  blood_in_stool: 'Sang dans les selles',
+  nausea: 'Nausées',
+  // Asthme
+  wheezing: 'Sifflements',
+  coughing: 'Toux',
+  breathing_difficulty: 'Difficulté respiratoire',
+  // Hypothyroïdie
+  lethargy: 'Léthargie',
+  cold_intolerance: 'Intolérance au froid',
+  hair_loss: 'Perte de poils',
+  // Commun
+  temperature: 'Température',
+  blood_pressure: 'Tension artérielle',
+  notes: 'Notes',
 }
 function translateKey(k: string): string {
   return CHRONIC_LABELS[k] ?? k.replace(/_/g, ' ')
+}
+function hasValue(v: unknown): boolean {
+  return v !== false && v !== null && v !== undefined && v !== ''
+}
+function formatChronicValue(v: unknown): { text: string; isTrue: boolean } {
+  if (v === true) return { text: 'Oui', isTrue: true }
+  return { text: String(v), isTrue: false }
 }
 
 // ── Traduction des noms de conditions chroniques ──────────────────
@@ -807,14 +860,17 @@ export default function SessionView({ session, animal, pinnedObs, treatments, va
                           {fmt(rec.recorded_at)}
                         </p>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-                          {Object.entries(rec.data ?? {}).map(([k, v]) => (
-                            <div key={k} style={{ background: 'white', border: '1px solid #e8e3da', borderRadius: 8, padding: '8px 12px' }}>
-                              <p style={{ fontSize: 9, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
-                                {translateKey(k)}
-                              </p>
-                              <p style={{ fontSize: 15, fontWeight: 700, color: '#0B6E5F' }}>{String(v)}</p>
-                            </div>
-                          ))}
+                          {Object.entries(rec.data ?? {}).filter(([, v]) => hasValue(v)).map(([k, v]) => {
+                            const { text, isTrue } = formatChronicValue(v)
+                            return (
+                              <div key={k} style={{ background: 'white', border: '1px solid #e8e3da', borderRadius: 8, padding: '8px 12px' }}>
+                                <p style={{ fontSize: 9, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
+                                  {translateKey(k)}
+                                </p>
+                                <p style={{ fontSize: 15, fontWeight: 700, color: isTrue ? '#FF6B5C' : '#0B6E5F', margin: 0 }}>{text}</p>
+                              </div>
+                            )
+                          })}
                         </div>
                       </div>
                     ))}
