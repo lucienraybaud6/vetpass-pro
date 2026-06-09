@@ -133,7 +133,6 @@ export default function HomePage() {
   const [vetEmail, setVetEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [devOtp, setDevOtp] = useState('')
 
   // ── Phase 1: find animal + active session ─────────────────────
   const handleCodeSubmit = async (e: React.FormEvent) => {
@@ -217,7 +216,6 @@ export default function HomePage() {
         body: JSON.stringify({ email: emailNorm, otp, firstName: firstName.trim() || undefined }),
       })
 
-      setDevOtp(otp)
       setVetEmail(emailNorm)
       setPhase('otp')
     } catch (err) {
@@ -485,12 +483,6 @@ export default function HomePage() {
               <strong style={{ color: 'rgba(255,255,255,0.85)' }}>{vetEmail}</strong>.
               <br />Valable 10 minutes.
             </p>
-            {devOtp && (
-              <div style={{ background: 'rgba(255,255,255,0.06)', border: '1px dashed rgba(255,255,255,0.2)', borderRadius: 10, padding: '10px 16px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', fontFamily: 'var(--font-inter), sans-serif' }}>Mode dev — Code :</span>
-                <span style={{ fontSize: 20, fontWeight: 700, color: '#9FE1CB', fontFamily: 'var(--font-space), monospace', letterSpacing: '0.1em' }}>{devOtp}</span>
-              </div>
-            )}
             <form onSubmit={handleOtpSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
               <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
                 {otpDigits.map((digit, i) => (
